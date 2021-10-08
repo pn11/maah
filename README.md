@@ -1,9 +1,10 @@
 # MaaH: My number card as a Health insurance card
 
+![demo](src/assets/demo.gif)
+
 マイナンバーカードを健康保険証として利用できる医療機関を検索できるツールです。以下の厚労省のページから CSV をダウンロードしてきて使っています。
 
 - [マイナンバーカードの健康保険証利用対応の医療機関・薬局についてのお知らせ（国民向け） | 厚生労働省](https://www.mhlw.go.jp/stf/index_16743.html)
-- 
 
 ## Developer's Info
 
