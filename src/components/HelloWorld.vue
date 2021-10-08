@@ -1,64 +1,230 @@
 <template>
-  <div class="hello">
-    <p>毎回情報を入力するのが面倒なので楽するためのやつです。全て半角で入力してください。</p>
-    <p>市区町村コード: <input v-model="cityCode" placeholder="市区町村コード"></p>
-    <p>接種券番号: <input v-model="couponNum" placeholder="接種券番号"></p>
-    <p>生年月日: <input type="number" min="1901" max="2021" v-model="year" placeholder="年(西暦)">年<input type="number" min="1" max="12" v-model="month" placeholder="月">月<input min="1" max="31" type="number" v-model="day" placeholder="日">日</p>
-    <p><button type="button" @click="doCopy">クリップボードにコピー</button> または <a v-bind:href=bookmarklet>ブックマークバーにドラッグ</a></p>
-    <code>{{ bookmarklet }}</code>
-    <h3>使用方法</h3>
-    <ul>
-      <li>上のテキストボックスに必要事項を入力するとブックマークレットが生成されるので、ブラウザに登録して利用してください。</li>
-      <li>登録方法は <a href=https://qiita.com/aqril_1132/items/b5f9040ccb8cbc705d04>ブックマークレットの登録方法 - Qiita</a> などを参照してください。</li>
-      <li>本ページで入力された情報はブラウザ内でのみ使用されます。このページのソースコードは<a href="https://github.com/pn11/vaccine-sdftokyo">こちら</a>です。</li>
-    </ul>
-    <img alt="demo" src="../assets/demo.gif">
-  </div>
+  <b-container fluid>
+    <!-- User Interface controls -->
+    <b-row>
+      <b-col lg="6" class="my-1">
+        <b-form-group
+          label="検索"
+          label-for="filter-input"
+          label-cols-sm="3"
+          label-align-sm="right"
+          label-size="sm"
+          class="mb-0"
+        >
+          <b-input-group size="sm">
+            <b-form-input
+              id="filter-input"
+              v-model="filter"
+              type="search"
+              placeholder="検索ワードを入力"
+              debounce="500"
+            ></b-form-input>
+
+            <b-input-group-append>
+              <b-button :disabled="!filter" @click="filter = ''"
+                >Clear</b-button
+              >
+            </b-input-group-append>
+          </b-input-group>
+        </b-form-group>
+      </b-col>
+
+      <b-col lg="6" class="my-1"> </b-col>
+
+      <b-col sm="5" md="6" class="my-1">
+        <b-form-group
+          label="ページごとの表示件数"
+          label-for="per-page-select"
+          label-cols-sm="6"
+          label-cols-md="4"
+          label-cols-lg="3"
+          label-align-sm="right"
+          label-size="sm"
+          class="mb-0"
+        >
+          <b-form-select
+            id="per-page-select"
+            v-model="perPage"
+            :options="pageOptions"
+            size="sm"
+          ></b-form-select>
+        </b-form-group>
+      </b-col>
+
+      <b-col sm="7" md="6" class="my-1">
+        <b-pagination
+          v-model="currentPage"
+          :total-rows="totalRows"
+          :per-page="perPage"
+          align="fill"
+          size="sm"
+          class="my-0"
+        ></b-pagination>
+      </b-col>
+    </b-row>
+
+    <!-- Main table element -->
+    <b-table
+      :items="items"
+      :fields="fields"
+      :current-page="currentPage"
+      :per-page="perPage"
+      :filter="filter"
+      :sort-by.sync="sortBy"
+      :sort-desc.sync="sortDesc"
+      :sort-direction="sortDirection"
+      stacked="md"
+      show-empty
+      small
+      primary-key="電話番号"
+      @filtered="onFiltered"
+    >
+      <template #cell(name)="row">
+        {{ row.value.first }} {{ row.value.last }}
+      </template>
+
+      <template #cell(actions)="row">
+        <b-button
+          size="sm"
+          @click="info(row.item, row.index, $event.target)"
+          class="mr-1"
+        >
+          JSON 形式
+        </b-button>
+        <b-button size="sm" @click="row.toggleDetails">
+          詳細 {{ row.detailsShowing ? "非表示" : "表示" }}
+        </b-button>
+      </template>
+
+      <template #row-details="row">
+        <b-card>
+          <ul>
+            <li v-for="(value, key) in row.item" :key="key">
+              {{ key }}: {{ value }}
+            </li>
+          </ul>
+        </b-card>
+      </template>
+    </b-table>
+
+    <!-- Info modal -->
+    <b-modal
+      :id="infoModal.id"
+      :title="infoModal.title"
+      ok-only
+      @hide="resetInfoModal"
+    >
+      <pre>{{ infoModal.content }}</pre>
+    </b-modal>
+  </b-container>
 </template>
 
 <script>
-import { copyText } from "vue3-clipboard";
+import Vue from "vue";
+import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
+
+//simport clinics from "../assets/000835966.json";
+
+// Import Bootstrap an BootstrapVue CSS files (order is important)
+import "bootstrap/dist/css/bootstrap.css";
+import "bootstrap-vue/dist/bootstrap-vue.css";
+
+// Make BootstrapVue available throughout your project
+Vue.use(BootstrapVue);
+// Optionally install the BootstrapVue icon components plugin
+Vue.use(IconsPlugin);
+
+import clinics from "../assets/000835966.json";
 
 export default {
   name: "HelloWorld",
-  components: {},
   data() {
     return {
-      cityCode: "",
-      couponNum: "",
-      year: 1901,
-      month: 1,
-      day: 1,
+      items: clinics,
+      fields: [
+        {
+          key: "医療機関名称（漢字）",
+          label: "医療機関名称",
+          sortable: true,
+          sortDirection: "desc",
+        },
+        {
+          key: "郵便番号",
+          label: "郵便番号",
+          sortable: true,
+          sortDirection: "desc",
+          class: "text-center",
+        },
+        {
+          key: "電話番号",
+          label: "電話番号",
+          sortable: true,
+          sortDirection: "desc",
+          class: "text-center",
+        },
+        {
+          key: "所在地（漢字）",
+          label: "所在地",
+          sortable: true,
+          sortDirection: "desc",
+          class: "text-center",
+        },
+        {
+          key: "開設者（漢字）",
+          label: "開設者",
+          sortable: true,
+          sortDirection: "desc",
+          class: "text-center",
+        },
+        { key: "actions", label: "詳細" },
+      ],
+      totalRows: 1,
+      currentPage: 1,
+      perPage: 10,
+      pageOptions: [
+        { value: 10, text: "10件" },
+        { value: 100, text: "100件" },
+        { value: 1000, text: "1000件" },
+      ],
+      sortBy: "",
+      sortDesc: false,
+      sortDirection: "asc",
+      filter: null,
+      infoModal: {
+        id: "info-modal",
+        title: "",
+        content: "",
+      },
     };
   },
   computed: {
-    bookmarklet: function () {
-      return (
-        'javascript:(function(){cityCode="' +
-        this.cityCode +
-        '";couponNum="' +
-        this.couponNum +
-        '";year=' +
-        this.year +
-        ";month=" +
-        this.month +
-        ";day=" +
-        this.day +
-        ';document.querySelector("#VisitnoAuthName").value=cityCode;document.querySelector("#VisitnoAuthVisitno").value=couponNum;document.querySelector("#VisitnoAuthYear").selectedIndex=year-1901;document.querySelector("#VisitnoAuthMonthMonth").selectedIndex=month-1;document.querySelector("#VisitnoAuthDayDay").selectedIndex=day-1;})()'
-      );
+    sortOptions() {
+      // Create an options list from our fields
+      return this.fields
+        .filter((f) => f.sortable)
+        .map((f) => {
+          return { text: f.label, value: f.key };
+        });
     },
   },
+  mounted() {
+    // Set the initial number of items
+    this.totalRows = this.items.length;
+  },
   methods: {
-    doCopy: function () {
-      copyText(this.bookmarklet, undefined, (error, event) => {
-        if (error) {
-          // alert("Can not copy");
-          console.log(error);
-        } else {
-          // alert("Copied");
-          console.log(event);
-        }
-      });
+    info(item, index, button) {
+      this.infoModal.title = `Row index: ${index}`;
+      this.infoModal.content = JSON.stringify(item, null, 2);
+      this.$root.$emit("bv::show::modal", this.infoModal.id, button);
+    },
+    resetInfoModal() {
+      this.infoModal.title = "";
+      this.infoModal.content = "";
+    },
+    onFiltered(filteredItems) {
+      // Trigger pagination to update the number of buttons/pages due to filtering
+      this.totalRows = filteredItems.length;
+      this.currentPage = 1;
     },
   },
 };
