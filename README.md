@@ -43,8 +43,4 @@ npm run csvtojson
 ### BootstrapVue に関して
 
 - [Table | Components | BootstrapVue](https://bootstrap-vue.org/docs/components/table) の [#Complete Example](https://bootstrap-vue.org/docs/components/table#complete-example) から要らないものを削った。
-- テーブルデータが多いと filter の応答が遅くなるのは [debounce](https://bootstrap-vue.org/docs/components/form-input#debounce-support) を 500 ms に設定することで解決した (via [table filter super slow · Issue #4211 · bootstrap-vue/bootstrap-vue](https://github.com/bootstrap-vue/bootstrap-vue/issues/4211))。デフォルトではこの値は0になっていて、文字を打ち込む度に検索がかかってしまうので応答が遅くなる。
-
-### Customize configuration
-
-See [Configuration Reference](https://cli.vuejs.org/config/).
+- テーブルデータが多いと filter の応答が遅くなるのは [debounce](https://bootstrap-vue.org/docs/components/form-input#debounce-support) を 500 ms に設定することで解決した (via [table filter super slow · Issue #4211 · bootstrap-vue/bootstrap-vue](https://github.com/bootstrap-vue/bootstrap-vue/issues/4211))。デフォルトではこの値は0になっていて、文字を打ち込む度に検索がかかってしまうので応答が遅くなる。
