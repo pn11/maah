@@ -17,7 +17,7 @@
               v-model="filter"
               type="search"
               placeholder="検索ワードを入力"
-              debounce="500"
+              debounce="2000"
             ></b-form-input>
 
             <b-input-group-append>
@@ -123,8 +123,6 @@
 import Vue from "vue";
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 
-//simport clinics from "../assets/000835966.json";
-
 // Import Bootstrap an BootstrapVue CSS files (order is important)
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue/dist/bootstrap-vue.css";
@@ -134,7 +132,7 @@ Vue.use(BootstrapVue);
 // Optionally install the BootstrapVue icon components plugin
 Vue.use(IconsPlugin);
 
-import clinics from "../assets/000835966.json";
+import clinics from "../assets/organizations.json";
 
 export default {
   name: "HelloWorld",
